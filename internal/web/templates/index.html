@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Web Interface</title>
+</head>
+<body>
+    <h1>Users from In-Memory API Service</h1>
+    <p>This page demonstrates calling the API service directly in-memory (not via HTTP).</p>
+    
+    <h2>Users List</h2>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+        </tr>
+        {{range .Users}}
+        <tr>
+            <td>{{.Id}}</td>
+            <td>{{.Name}}</td>
+            <td>{{.Email}}</td>
+        </tr>
+        {{end}}
+    </table>
+    
+    <h2>Create User Form</h2>
+    <form method="POST" action="/create-user">
+        <div>
+            <label>Name: <input type="text" name="name" required></label>
+        </div>
+        <div>
+            <label>Email: <input type="email" name="email" required></label>
+        </div>
+        <button type="submit">Create User</button>
+    </form>
+</body>
+</html>

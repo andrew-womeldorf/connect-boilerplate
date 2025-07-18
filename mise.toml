@@ -1,0 +1,84 @@
+[tools]
+buf = "1.54.0"
+go = "1.24.4"
+"go:connectrpc.com/connect/cmd/protoc-gen-connect-go" = "1.18.1"
+"go:golang.org/x/tools/cmd/goimports" = "0.32.0"
+"go:google.golang.org/protobuf/cmd/protoc-gen-go" = "1.36.6"
+golangci-lint = "2.1.6"
+
+[vars]
+binary_name = "api"
+build_dir = "build"
+proto_dir = "proto"
+proto_go_dir = "gen"
+
+[tasks."proto:generate"] 
+description = "Generate code from Protocol Buffers using buf"
+run = "buf generate"
+sources = ["{{vars.proto_dir}}/**/*.proto", "buf.yaml", "buf.gen.yaml"]
+outputs = ["{{vars.proto_go_dir}}/**/*.pb.go", "{{vars.proto_go_dir}}/**/*.connect.go"]
+
+[tasks."proto:lint"]
+description = "Lint Protocol Buffers using buf"
+run = "buf lint"
+depends = ["proto:generate"]
+
+[tasks."go:download"]
+hide = true
+description = "download go modules"
+run = "go mod download"
+sources = ["go.mod", "go.sum"]
+outputs = { auto = true }
+
+[tasks."go:format"]
+description = "Format code"
+run = [
+"go fmt ./...",
+"go mod tidy",
+"goimports -w .",
+]
+
+[tasks.build]
+description = "Build API binary"
+env.CGO_ENABLED = "0"
+run = [
+'mkdir -p {{vars.build_dir}}',
+'go build -trimpath -ldflags "-s -w" -o {{vars.build_dir}}/{{vars.binary_name}} ./cmd/cli',
+]
+sources = ["**/*.go"]
+outputs = ["{{vars.build_dir}}/{{vars.binary_name}}"]
+depends = ["proto:generate", "go:download"]
+
+[tasks.test]
+description = "Run tests"
+run = "go test -v ./..."
+depends = ["proto:generate", "go:download"]
+
+[tasks.lint]
+description = "Run linter"
+run = "golangci-lint run ./..."
+depends = ["proto:generate", "go:download"]
+wait_for = ["go:format"]
+
+[tasks.format]
+description = "Run all formatters"
+depends = ["go:format"]
+
+[tasks.check]
+description = "Run all checks"
+depends = [
+  "format",
+  "lint", 
+  "test",
+  "proto:lint",
+]
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = "rm -rf {{vars.build_dir}} && go clean"
+
+[tasks.serve]
+description = "Run API server locally"
+depends = ["proto:generate", "go:download"]
+sources = ["**/*.go"]
+run = "go run ./cmd/cli serve"

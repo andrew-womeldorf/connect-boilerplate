@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package example.v1;
+
+option go_package = "example/connectrpc-api";
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message DeleteUserResponse {}

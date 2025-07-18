@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "example/v1/user.proto";
+
+option go_package = "example/connectrpc-api";
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}

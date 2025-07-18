@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "example/v1/list_users.proto";
+import "example/v1/get_user.proto";
+import "example/v1/create_user.proto";
+import "example/v1/update_user.proto";
+import "example/v1/delete_user.proto";
+
+option go_package = "example/connectrpc-api";
+
+service UserService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+}

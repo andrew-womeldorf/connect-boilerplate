@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "example/v1/user.proto";
+
+option go_package = "example/connectrpc-api";
+
+message ListUsersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}

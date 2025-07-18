@@ -1,0 +1,54 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.zip
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Build directory
+build/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS specific files
+.DS_Store
+
+# Terraform files
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfplan
+terraform/dummy.zip
+terraform/api.zip
+terraform/poller.zip
+
+# Environment variables
+.env
+.env.local
+
+# Generated files
+proto/*.pb.go
+proto/*_grpc.pb.go
+gen
+
+# Log files
+*.log
+
+# misc
+localstack_data
+tmp

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "example/connectrpc-api";
+
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
