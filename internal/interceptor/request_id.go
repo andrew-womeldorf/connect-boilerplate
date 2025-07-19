@@ -6,7 +6,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 
-	internal_context "github.com/andrew-womeldorf/connect-boilerplate/internal/context"
+	internalContext "github.com/andrew-womeldorf/connect-boilerplate/internal/context"
 )
 
 const RequestIDHeader = "X-Request-ID"
@@ -22,7 +22,7 @@ func RequestIDInterceptor() connect.UnaryInterceptorFunc {
 				requestID = uuid.New().String()
 			}
 
-			ctx = internal_context.WithRequestID(ctx, requestID)
+			ctx = internalContext.WithRequestID(ctx, requestID)
 
 			res, err := next(ctx, req)
 			if err != nil {

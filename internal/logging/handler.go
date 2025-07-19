@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	internal_context "github.com/andrew-womeldorf/connect-boilerplate/internal/context"
+	internalContext "github.com/andrew-womeldorf/connect-boilerplate/internal/context"
 )
 
 type RequestIDHandler struct {
@@ -18,7 +18,7 @@ func NewRequestIDHandler(handler slog.Handler) *RequestIDHandler {
 }
 
 func (h *RequestIDHandler) Handle(ctx context.Context, record slog.Record) error {
-	if requestID, ok := internal_context.GetRequestID(ctx); ok {
+	if requestID, ok := internalContext.GetRequestID(ctx); ok {
 		record.AddAttrs(slog.String("id", requestID))
 	}
 	return h.handler.Handle(ctx, record)
