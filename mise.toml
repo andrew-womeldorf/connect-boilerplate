@@ -77,6 +77,12 @@ depends = [
 description = "Clean build artifacts"
 run = "rm -rf {{vars.build_dir}} && go clean"
 
+[tasks.cli]
+description = "Run API server locally"
+depends = ["proto:generate", "go:download"]
+sources = ["**/*.go"]
+run = "go run ./cmd/cli"
+
 [tasks.serve]
 description = "Run API server locally"
 depends = ["proto:generate", "go:download"]

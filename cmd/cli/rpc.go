@@ -12,6 +12,7 @@ import (
 
 	"github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1/examplev1connect"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
+	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
 )
 
 var (
@@ -58,12 +59,7 @@ func getClient(ctx context.Context) (examplev1connect.UserServiceClient, error) 
 		), nil
 	} else {
 		// Use local service with ServiceAdapter
-		srv := server.NewServer(0) // Port doesn't matter for local client
-		service, err := srv.GetService(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get service: %w", err)
-		}
-		return server.NewServiceAdapter(service), nil
+		return server.NewConnectHandler(api.NewService()), nil
 	}
 }
 

@@ -4,11 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"connectrpc.com/connect"
-
 	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1"
 )
 
+// Service handles the business logic
 type Service struct {
 	// Add dependencies here (database, other services, etc.)
 }
@@ -17,7 +16,7 @@ func NewService() *Service {
 	return &Service{}
 }
 
-func (s *Service) ListUsers(ctx context.Context, req *connect.Request[pb.ListUsersRequest]) (*connect.Response[pb.ListUsersResponse], error) {
+func (s *Service) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
 	slog.InfoContext(ctx, "listing users")
 
 	// TODO: Implement actual logic
@@ -34,63 +33,45 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[pb.ListUse
 		},
 	}
 
-	resp := connect.NewResponse(&pb.ListUsersResponse{
-		Users: users,
-	})
-
-	return resp, nil
+	return &pb.ListUsersResponse{Users: users}, nil
 }
 
-func (s *Service) GetUser(ctx context.Context, req *connect.Request[pb.GetUserRequest]) (*connect.Response[pb.GetUserResponse], error) {
+func (s *Service) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	// TODO: Implement actual logic
 	user := &pb.User{
-		Id:    req.Msg.Id,
+		Id:    req.Id,
 		Name:  "John Doe",
 		Email: "john@example.com",
 	}
 
-	resp := connect.NewResponse(&pb.GetUserResponse{
-		User: user,
-	})
-
-	return resp, nil
+	return &pb.GetUserResponse{User: user}, nil
 }
 
-func (s *Service) CreateUser(ctx context.Context, req *connect.Request[pb.CreateUserRequest]) (*connect.Response[pb.CreateUserResponse], error) {
-	slog.InfoContext(ctx, "creating user", slog.String("name", req.Msg.Name), slog.String("email", req.Msg.Email))
+func (s *Service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+	slog.InfoContext(ctx, "creating user", slog.String("name", req.Name), slog.String("email", req.Email))
 
 	// TODO: Implement actual logic
 	user := &pb.User{
 		Id:    "new-user-id",
-		Name:  req.Msg.Name,
-		Email: req.Msg.Email,
+		Name:  req.Name,
+		Email: req.Email,
 	}
 
-	resp := connect.NewResponse(&pb.CreateUserResponse{
-		User: user,
-	})
-
-	return resp, nil
+	return &pb.CreateUserResponse{User: user}, nil
 }
 
-func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[pb.UpdateUserRequest]) (*connect.Response[pb.UpdateUserResponse], error) {
+func (s *Service) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error) {
 	// TODO: Implement actual logic
 	user := &pb.User{
-		Id:    req.Msg.Id,
-		Name:  req.Msg.Name,
-		Email: req.Msg.Email,
+		Id:    req.Id,
+		Name:  req.Name,
+		Email: req.Email,
 	}
 
-	resp := connect.NewResponse(&pb.UpdateUserResponse{
-		User: user,
-	})
-
-	return resp, nil
+	return &pb.UpdateUserResponse{User: user}, nil
 }
 
-func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[pb.DeleteUserRequest]) (*connect.Response[pb.DeleteUserResponse], error) {
+func (s *Service) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*pb.DeleteUserResponse, error) {
 	// TODO: Implement actual logic
-	resp := connect.NewResponse(&pb.DeleteUserResponse{})
-
-	return resp, nil
+	return &pb.DeleteUserResponse{}, nil
 }

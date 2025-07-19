@@ -115,12 +115,12 @@ After running setup:
 
 This boilerplate is designed to prevent common anti-patterns:
 
-❌ **Don't**: Create RPC methods that bypass the protobuf service definitions
-❌ **Don't**: Add database access outside of the `internal/server` layer  
-❌ **Don't**: Create business logic that isn't exposed through a protobuf RPC method
+- ❌ **Don't**: Create RPC methods that bypass the protobuf service definitions
+- ❌ **Don't**: Add database access outside of the `pkg/api` layer  
+- ❌ **Don't**: Create business logic that isn't exposed through a protobuf RPC method
 
-✅ **Do**: Define all functionality in `.proto` files first
-✅ **Do**: Implement business logic in `pkg/api/service.go` methods
-✅ **Do**: Use the CLI RPC commands for testing and client interaction
+- ✅ **Do**: Define all functionality in `.proto` files first
+- ✅ **Do**: Implement business logic in `pkg/api/service.go` methods
+- ✅ **Do**: Use the CLI RPC commands for testing and client interaction
 
 This ensures your API remains consistent, type-safe, and evolvable while supporting multiple deployment targets (HTTP server, Lambda, CLI).

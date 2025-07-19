@@ -9,39 +9,60 @@ import (
 	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
 )
 
-// ServiceAdapter adapts the API service to the Connect interface
-type ServiceAdapter struct {
+// ConnectHandler handles the over-the-wire connect requests, and sends them to
+// the service, which handles in-memory objects.
+type ConnectHandler struct {
 	service *api.Service
 }
 
-// NewServiceAdapter creates a new service adapter
-func NewServiceAdapter(service *api.Service) *ServiceAdapter {
-	return &ServiceAdapter{
+// NewConnectHandler creates a new service adapter
+func NewConnectHandler(service *api.Service) *ConnectHandler {
+	return &ConnectHandler{
 		service: service,
 	}
 }
 
 // ListUsers implements the Connect interface
-func (a *ServiceAdapter) ListUsers(ctx context.Context, req *connect.Request[pb.ListUsersRequest]) (*connect.Response[pb.ListUsersResponse], error) {
-	return a.service.ListUsers(ctx, req)
+func (a *ConnectHandler) ListUsers(ctx context.Context, req *connect.Request[pb.ListUsersRequest]) (*connect.Response[pb.ListUsersResponse], error) {
+	resp, err := a.service.ListUsers(ctx, req.Msg)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // GetUser implements the Connect interface
-func (a *ServiceAdapter) GetUser(ctx context.Context, req *connect.Request[pb.GetUserRequest]) (*connect.Response[pb.GetUserResponse], error) {
-	return a.service.GetUser(ctx, req)
+func (a *ConnectHandler) GetUser(ctx context.Context, req *connect.Request[pb.GetUserRequest]) (*connect.Response[pb.GetUserResponse], error) {
+	resp, err := a.service.GetUser(ctx, req.Msg)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // CreateUser implements the Connect interface
-func (a *ServiceAdapter) CreateUser(ctx context.Context, req *connect.Request[pb.CreateUserRequest]) (*connect.Response[pb.CreateUserResponse], error) {
-	return a.service.CreateUser(ctx, req)
+func (a *ConnectHandler) CreateUser(ctx context.Context, req *connect.Request[pb.CreateUserRequest]) (*connect.Response[pb.CreateUserResponse], error) {
+	resp, err := a.service.CreateUser(ctx, req.Msg)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // UpdateUser implements the Connect interface
-func (a *ServiceAdapter) UpdateUser(ctx context.Context, req *connect.Request[pb.UpdateUserRequest]) (*connect.Response[pb.UpdateUserResponse], error) {
-	return a.service.UpdateUser(ctx, req)
+func (a *ConnectHandler) UpdateUser(ctx context.Context, req *connect.Request[pb.UpdateUserRequest]) (*connect.Response[pb.UpdateUserResponse], error) {
+	resp, err := a.service.UpdateUser(ctx, req.Msg)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // DeleteUser implements the Connect interface
-func (a *ServiceAdapter) DeleteUser(ctx context.Context, req *connect.Request[pb.DeleteUserRequest]) (*connect.Response[pb.DeleteUserResponse], error) {
-	return a.service.DeleteUser(ctx, req)
+func (a *ConnectHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.DeleteUserRequest]) (*connect.Response[pb.DeleteUserResponse], error) {
+	resp, err := a.service.DeleteUser(ctx, req.Msg)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(resp), nil
 }

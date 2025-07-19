@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	"github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1/examplev1connect"
+	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1/examplev1connect"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/interceptor"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/web"
 	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
@@ -52,29 +52,20 @@ func (s *Server) Run() error {
 // CreateHandler creates an HTTP handler for the server without starting it
 // This is useful for Lambda functions that need to handle HTTP requests
 func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
-	// Create service
-	serviceHandler, err := s.createService(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create service: %w", err)
-	}
-
-	// Get the underlying service for web handlers
-	service, err := s.GetService(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get service: %w", err)
-	}
+	service := api.NewService()
+	connectHandler := NewConnectHandler(service)
+	webHandler := web.NewHandler(service)
 
 	// Create Connect server
 	mux := http.NewServeMux()
-	path, connectHandler := examplev1connect.NewUserServiceHandler(serviceHandler,
+	mux.Handle(v1.NewUserServiceHandler(connectHandler,
 		connect.WithInterceptors(
 			interceptor.RequestIDInterceptor(),
 		),
-	)
-	mux.Handle(path, connectHandler)
+	))
 
 	// Add gRPC Reflector
-	reflector := grpcreflect.NewStaticReflector(examplev1connect.UserServiceName)
+	reflector := grpcreflect.NewStaticReflector(v1.UserServiceName)
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 
@@ -87,7 +78,6 @@ func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
 	})
 
 	// Add web interface endpoints
-	webHandler := web.NewHandler(service)
 	mux.HandleFunc("/", webHandler.IndexHandler)
 	mux.HandleFunc("/create-user", webHandler.CreateUserHandler)
 
@@ -98,33 +88,6 @@ func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
 	h2cHandler := h2c.NewHandler(corsHandler, &http2.Server{})
 
 	return h2cHandler, nil
-}
-
-// GetService returns the service from the server
-func (s *Server) GetService(ctx context.Context) (*api.Service, error) {
-	serviceHandler, err := s.createService(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create service: %w", err)
-	}
-
-	// Get the service adapter
-	serviceAdapter, ok := serviceHandler.(*ServiceAdapter)
-	if !ok {
-		return nil, fmt.Errorf("failed to cast service to ServiceAdapter")
-	}
-
-	return serviceAdapter.service, nil
-}
-
-// createService creates the service and adapter
-func (s *Server) createService(ctx context.Context) (examplev1connect.UserServiceHandler, error) {
-	// Create service
-	service := api.NewService()
-
-	// Create adapter
-	adapter := NewServiceAdapter(service)
-
-	return adapter, nil
 }
 
 // corsMiddleware adds CORS headers for browser clients

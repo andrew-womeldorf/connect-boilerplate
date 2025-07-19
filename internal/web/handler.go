@@ -6,8 +6,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"connectrpc.com/connect"
-
 	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1"
 	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
 )
@@ -28,8 +26,7 @@ func NewHandler(service *api.Service) *Handler {
 func (h *Handler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	listReq := connect.NewRequest(&pb.ListUsersRequest{})
-	listResp, err := h.service.ListUsers(ctx, listReq)
+	listResp, err := h.service.ListUsers(ctx, &pb.ListUsersRequest{})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to list users: %v", err), http.StatusInternalServerError)
 		return
@@ -38,7 +35,7 @@ func (h *Handler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Users []*pb.User
 	}{
-		Users: listResp.Msg.Users,
+		Users: listResp.Users,
 	}
 
 	tmpl, err := template.New("index").Parse(indexTemplate)
@@ -70,10 +67,10 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createReq := connect.NewRequest(&pb.CreateUserRequest{
+	createReq := &pb.CreateUserRequest{
 		Name:  name,
 		Email: email,
-	})
+	}
 
 	_, err := h.service.CreateUser(ctx, createReq)
 	if err != nil {
