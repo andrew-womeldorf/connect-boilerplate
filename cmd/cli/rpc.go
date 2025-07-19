@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1/examplev1connect"
+	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1/examplev1connect"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
 	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
 )
@@ -49,11 +49,11 @@ func init() {
 }
 
 // getClient returns either a local client or a remote client based on whether the API endpoint is provided
-func getClient(ctx context.Context) (examplev1connect.UserServiceClient, error) {
+func getClient(ctx context.Context) (v1.UserServiceClient, error) {
 	if apiEndpoint != "" {
 		// Use Connect client with remote endpoint
 		httpClient := http.DefaultClient
-		return examplev1connect.NewUserServiceClient(
+		return v1.NewUserServiceClient(
 			httpClient,
 			apiEndpoint,
 		), nil
