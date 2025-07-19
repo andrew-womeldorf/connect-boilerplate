@@ -15,6 +15,7 @@ import (
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/interceptor"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/web"
 	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
+	sloghttp "github.com/samber/slog-http"
 )
 
 // Server represents the API server
@@ -82,10 +83,12 @@ func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
 	mux.HandleFunc("/create-user", webHandler.CreateUserHandler)
 
 	// Add CORS middleware for browser clients
-	corsHandler := corsMiddleware(mux)
+	mid := corsMiddleware(mux)
+	mid = sloghttp.Recovery(mid)
+	mid = sloghttp.New(slog.Default())(mid)
 
 	// Create h2c handler for HTTP/2 support
-	h2cHandler := h2c.NewHandler(corsHandler, &http2.Server{})
+	h2cHandler := h2c.NewHandler(mid, &http2.Server{})
 
 	return h2cHandler, nil
 }

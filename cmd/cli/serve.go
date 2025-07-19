@@ -10,10 +10,7 @@ import (
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
 )
 
-var (
-	port       int
-	jsonFormat bool
-)
+var port int
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
@@ -22,7 +19,7 @@ var serveCmd = &cobra.Command{
 	Long:  `Start the API server that provides Connect RPC endpoints.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Setup logger
-		logging.SetupLogger(jsonFormat, slog.LevelInfo)
+		logging.SetupLogger()
 
 		// Create and run server
 		srv := server.NewServer(port)
@@ -38,5 +35,4 @@ func init() {
 
 	// Add flags specific to the serve command
 	serveCmd.Flags().IntVarP(&port, "port", "p", 8088, "Port to listen on")
-	serveCmd.Flags().BoolVar(&jsonFormat, "json", false, "Use JSON log format")
 }

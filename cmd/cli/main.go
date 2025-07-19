@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/lmittmann/tint"
+	slogformatter "github.com/samber/slog-formatter"
 	"github.com/spf13/cobra"
 )
 
@@ -41,13 +43,15 @@ It provides both server functionality and RPC client commands.`,
 				Level:     logLevel,
 			})
 		} else {
-			handler = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+			handler = tint.NewHandler(os.Stderr, &tint.Options{
 				AddSource: true,
 				Level:     logLevel,
 			})
 		}
 
-		logger := slog.New(handler)
+		logger := slog.New(slogformatter.NewFormatterHandler(
+			slogformatter.ErrorFormatter("error"),
+		)(handler))
 		slog.SetDefault(logger)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
