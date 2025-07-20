@@ -13,6 +13,7 @@ import (
 	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1/userv1connect"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user"
+	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store/sqlite"
 )
 
 var (
@@ -58,8 +59,14 @@ func getClient(ctx context.Context) (v1.UserServiceClient, error) {
 			apiEndpoint,
 		), nil
 	} else {
+		store, err := sqlite.NewStore(ctx, ":memory:")
+		if err != nil {
+			slog.DebugContext(ctx, "could not get sqlite user store", slog.Any("error", err))
+			return nil, err
+		}
+
 		// Use local service with ServiceAdapter
-		return server.NewUserConnectHandler(user.NewService()), nil
+		return server.NewUserConnectHandler(user.NewService(store)), nil
 	}
 }
 

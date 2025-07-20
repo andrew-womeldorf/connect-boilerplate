@@ -1,10 +1,12 @@
 package user
 
+import "github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store"
+
 // Service handles the business logic
 type Service struct {
-	// Add dependencies here (database, other services, etc.)
+	store store.Store
 }
 
-func NewService() *Service {
-	return &Service{}
+func NewService(store store.Store) *Service {
+	return &Service{store}
 }

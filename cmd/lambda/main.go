@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
+	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store/sqlite"
 )
 
 func init() {
@@ -27,11 +28,16 @@ func init() {
 }
 
 func main() {
+	ctx := context.Background()
+	userStore, err := sqlite.NewStore(ctx, ":memory:")
+	if err != nil {
+		panic(err)
+	}
+
 	// Create server
-	srv := server.NewServer(0) // Port doesn't matter for lambda
+	srv := server.NewServer(0, userStore) // Port doesn't matter for lambda
 
 	// Create handler
-	ctx := context.Background()
 	handler, err := srv.CreateHandler(ctx)
 	if err != nil {
 		slog.Error("Failed to create handler", "error", err)

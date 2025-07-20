@@ -5,12 +5,14 @@ go = "1.24.4"
 "go:golang.org/x/tools/cmd/goimports" = "0.32.0"
 "go:google.golang.org/protobuf/cmd/protoc-gen-go" = "1.36.6"
 golangci-lint = "2.1.6"
+"ubi:sqlc-dev/sqlc" = "1.29.0"
 
 [vars]
 binary_name = "api"
 build_dir = "build"
 proto_dir = "proto"
 proto_go_dir = "gen"
+user_store_dir = "internal/services/user/store"
 
 [tasks."proto:generate"] 
 description = "Generate code from Protocol Buffers using buf"
@@ -28,6 +30,16 @@ hide = true
 description = "download go modules"
 run = "go mod download"
 sources = ["go.mod", "go.sum"]
+outputs = { auto = true }
+
+[tasks."go:generate"]
+description = "Generate go from sql"
+dir = "{{vars.user_store_dir}}/sqlite"
+run = "sqlc generate"
+sources = [
+"{{vars.user_store_dir}}/sqlite/schema.sql",
+"{{vars.user_store_dir}}/sqlite/query.sql",
+]
 outputs = { auto = true }
 
 [tasks."go:format"]

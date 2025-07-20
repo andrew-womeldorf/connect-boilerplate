@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
@@ -8,6 +9,7 @@ import (
 
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/logging"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
+	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store/sqlite"
 )
 
 var port int
@@ -21,8 +23,13 @@ var serveCmd = &cobra.Command{
 		// Setup logger
 		logging.SetupLogger()
 
+		store, err := sqlite.NewStore(context.Background(), ":memory:")
+		if err != nil {
+			panic(err)
+		}
+
 		// Create and run server
-		srv := server.NewServer(port)
+		srv := server.NewServer(port, store)
 		if err := srv.Run(); err != nil {
 			slog.Error("Failed to run server", "error", err)
 			os.Exit(1)
