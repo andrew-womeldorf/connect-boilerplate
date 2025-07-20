@@ -1,22 +1,32 @@
 # Connect RPC API Boilerplate
 
-This is a boilerplate repository for building Go APIs using [Connect RPC](https://connectrpc.com/) and [Buf](https://buf.build/). It demonstrates a protocol-first development approach where all interactions with the system are driven through protobuf service definitions.
+This is a boilerplate repository for building Go APIs using [Connect
+RPC](https://connectrpc.com/) and [Buf](https://buf.build/). It demonstrates a
+protocol-first development approach where all interactions with the system are
+driven through protobuf service definitions.
 
 ## Architecture Philosophy
 
-**Protocol-First Development**: This boilerplate enforces that all access to business logic and data must flow through the protobuf-defined service interface. There are no direct paths to business logic or database operations outside of what's explicitly defined in the `.proto` files.
+**Schema-First Development**: This boilerplate enforces that all access to
+business logic and data must flow through the protobuf-defined service
+interface. There are no direct paths to business logic or database operations
+outside of what's explicitly defined in the `.proto` files.
 
 This approach ensures:
-- **API Contract Clarity**: The protobuf definitions serve as the single source of truth for what the API can do
+- **API Contract Clarity**: The protobuf definitions serve as the single source
+  of truth for what the API can do
 - **Type Safety**: All data structures and service methods are strongly typed
-- **Multi-Language Support**: Connect RPC works with any language that supports protobuf
-- **Backwards Compatibility**: Changes to the API can be validated for breaking changes using buf
+- **Multi-Language Support**: Connect RPC works with any language that supports
+  protobuf
+- **Backwards Compatibility**: Changes to the API can be validated for breaking
+  changes using buf
 
 ## Getting Started
 
 ### First-Time Setup (Required)
 
-**IMPORTANT**: If you've copied or forked this repository, run the setup script **once** to rename the project:
+**IMPORTANT**: If you've copied or forked this repository, run the setup script
+**once** to rename the project:
 
 ```bash
 ./setup.sh your.domain.com/username/project-name
@@ -29,15 +39,15 @@ For example:
 ```
 
 This script will:
-- Update all Go imports from `example/connectrpc-api` to your module name
-- Rename proto package from `example.v1` to `yourproject.v1`
-- Move proto files from `proto/example/` to `proto/yourproject/`
-- Update all configuration files (buf.yaml, buf.gen.yaml, etc.)
+- Update all Go imports from `github.com/andrew-womeldorf/connect-boilerplate`
+  to your module name
+- Update all configuration files (go.mod, buf.gen.yaml, etc.)
 
 After running setup:
 1. **Generate protobuf code**: `mise run proto:generate`
 2. **Run quality checks**: `mise run check`
-3. **Commit your changes**: `git add . && git commit -m "Rename project to your-module-name"`
+3. **Commit your changes**: `git add . && git commit -m "Rename project to
+   your-module-name"`
 4. **Remove setup script**: `rm setup.sh`
 
 ### Development Workflow
@@ -45,24 +55,26 @@ After running setup:
 1. **Trust mise configuration**: `mise trust`
 2. **Generate protobuf code**: `mise run proto:generate`
 3. **Start the server**: `mise run serve`
-4. **Test with RPC commands**: `./build/api rpc list-users` (after building)
+4. **Test with RPC commands**: `./build/api user list-users` (after building)
 
 ## Directory Structure
 
 ### `proto/`
 **The Source of Truth** - Contains all protobuf definitions using the 1-1-1 pattern:
-- `proto/example/v1/user_service.proto` - Service definition (imports all message types)
-- `proto/example/v1/user.proto` - Core entity definitions
-- `proto/example/v1/{operation}.proto` - Individual request/response message pairs
+- `proto/user/v1/user_service.proto` - Service definition (imports all message types)
+- `proto/user/v1/user.proto` - Core entity definitions
+- `proto/user/v1/{operation}.proto` - Individual request/response message pairs
 
-**Key Principle**: All functionality must be defined here first. No business logic should exist without a corresponding protobuf definition.
+**Key Principle**: All functionality must be defined here first. No business
+logic should exist without a corresponding protobuf definition.
 
 ### `gen/`
-**Generated Code** - Auto-generated Go code from protobuf definitions. Never edit manually.
-- `gen/example/v1/*.pb.go` - Protobuf message types
-- `gen/example/v1/examplev1connect/*.connect.go` - Connect RPC service interfaces
+**Generated Code** - Auto-generated Go code from protobuf definitions. Never
+edit manually.
+- `gen/user/v1/*.pb.go` - Protobuf message types
+- `gen/user/v1/userv1connect/*.connect.go` - Connect RPC service interfaces
 
-### `pkg/api/`
+### `internal/services/user/`
 **Business Logic Layer** - Implements the actual service logic defined in protobuf.
 - `service.go` - Core business logic that implements the protobuf-generated interfaces
 - Methods must match exactly what's defined in the `.proto` service definitions
@@ -70,7 +82,8 @@ After running setup:
 ### `internal/server/`
 **HTTP Server Layer** - Bridges the business logic to HTTP transport and handles data access.
 - `server.go` - HTTP server setup with Connect RPC handlers, gRPC reflection, and h2c support
-- `service_adapter.go` - Thin adapter that connects `pkg/api` service to Connect RPC interface
+- `user_connect_handler.go` - Thin adapter that connects
+  `internal/services/user` service to Connect RPC interface
 - Provides both standalone server (`Run()`) and handler creation (`CreateHandler()`) for Lambda
 - **Database Access**: All data persistence should be handled at this layer
 
@@ -80,8 +93,8 @@ After running setup:
 #### `cmd/cli/`
 **CLI Interface** - Cobra-based command-line tool with dual-mode operation:
 - `serve.go` - Starts the HTTP server
-- `rpc.go` - Base RPC client setup with endpoint configuration
-- `rpc_*.go` - Individual RPC command implementations (one file per RPC method)
+- `user.go` - User RPC client setup with endpoint configuration
+- `user_*.go` - Individual User RPC command implementations (one file per RPC method)
 
 **Dual Mode Support**:
 - **In-memory mode** (default): Directly calls service methods for testing/development
@@ -100,8 +113,10 @@ After running setup:
 
 1. **Define the API**: Start by defining or modifying `.proto` files in `proto/`
 2. **Generate Code**: Run `mise run proto:generate` to update generated code
-3. **Implement Business Logic**: Add implementation in `pkg/api/service.go`
-4. **Update Adapter**: Ensure `internal/server/service_adapter.go` routes to your service methods
+3. **Implement Business Logic**: Add implementation in
+   `internal/services/<svc>/service.go`
+4. **Update Adapter**: Ensure `internal/server/<svc>_connect_handler.go` routes
+   to your service methods
 5. **Test**: Use CLI commands or start server to test functionality
 
 ## Key Commands
@@ -123,4 +138,5 @@ This boilerplate is designed to prevent common anti-patterns:
 - ✅ **Do**: Implement business logic in `pkg/api/service.go` methods
 - ✅ **Do**: Use the CLI RPC commands for testing and client interaction
 
-This ensures your API remains consistent, type-safe, and evolvable while supporting multiple deployment targets (HTTP server, Lambda, CLI).
+This ensures your API remains consistent, type-safe, and evolvable while
+supporting multiple deployment targets (HTTP server, Lambda, CLI).
