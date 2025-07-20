@@ -12,16 +12,16 @@ import (
 
 	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1/userv1connect"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
-	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
+	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user"
 )
 
 var (
 	apiEndpoint string
 )
 
-// rpcCmd represents the rpc command
-var rpcCmd = &cobra.Command{
-	Use:   "rpc",
+// userCmd represents the user command
+var userCmd = &cobra.Command{
+	Use:   "user",
 	Short: "Execute RPC calls to the User service",
 	Long: `Execute RPC calls to the User service using RPC-style commands.
 This command provides subcommands for all RPCs in the User service.`,
@@ -35,17 +35,17 @@ This command provides subcommands for all RPCs in the User service.`,
 }
 
 func init() {
-	RootCmd.AddCommand(rpcCmd)
+	RootCmd.AddCommand(userCmd)
 
-	// Add API endpoint flag to the rpc command
-	rpcCmd.PersistentFlags().StringVar(&apiEndpoint, "endpoint", "", "API endpoint URL (e.g., http://localhost:8088)")
+	// Add API endpoint flag to the user command
+	userCmd.PersistentFlags().StringVar(&apiEndpoint, "endpoint", "", "API endpoint URL (e.g., http://localhost:8088)")
 
-	// Add all RPC commands
-	rpcCmd.AddCommand(listUsersCmd())
-	rpcCmd.AddCommand(getUserCmd())
-	rpcCmd.AddCommand(createUserCmd())
-	rpcCmd.AddCommand(updateUserCmd())
-	rpcCmd.AddCommand(deleteUserCmd())
+	// Add all User RPC commands
+	userCmd.AddCommand(listUsersCmd())
+	userCmd.AddCommand(getUserCmd())
+	userCmd.AddCommand(createUserCmd())
+	userCmd.AddCommand(updateUserCmd())
+	userCmd.AddCommand(deleteUserCmd())
 }
 
 // getClient returns either a local client or a remote client based on whether the API endpoint is provided
@@ -59,7 +59,7 @@ func getClient(ctx context.Context) (v1.UserServiceClient, error) {
 		), nil
 	} else {
 		// Use local service with ServiceAdapter
-		return server.NewConnectHandler(api.NewService()), nil
+		return server.NewUserConnectHandler(user.NewService()), nil
 	}
 }
 

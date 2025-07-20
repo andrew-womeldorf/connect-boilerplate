@@ -7,17 +7,17 @@ import (
 	"net/http"
 
 	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1"
-	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
+	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user"
 )
 
 //go:embed templates/index.html
 var indexTemplate string
 
 type Handler struct {
-	service *api.Service
+	service *user.Service
 }
 
-func NewHandler(service *api.Service) *Handler {
+func NewHandler(service *user.Service) *Handler {
 	return &Handler{
 		service: service,
 	}

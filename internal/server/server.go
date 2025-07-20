@@ -13,8 +13,8 @@ import (
 
 	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1/userv1connect"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/interceptor"
+	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/web"
-	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
 	sloghttp "github.com/samber/slog-http"
 )
 
@@ -53,12 +53,12 @@ func (s *Server) Run() error {
 // CreateHandler creates an HTTP handler for the server without starting it
 // This is useful for Lambda functions that need to handle HTTP requests
 func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
-	service := api.NewService()
-	webHandler := web.NewHandler(service)
+	userService := user.NewService()
+	webHandler := web.NewHandler(userService)
 
 	// Create Connect server
 	mux := http.NewServeMux()
-	p, h := v1.NewUserServiceHandler(NewConnectHandler(service),
+	p, h := v1.NewUserServiceHandler(NewUserConnectHandler(userService),
 		connect.WithInterceptors(interceptor.RequestIDInterceptor()),
 	)
 	mux.Handle(p, h)
