@@ -1,10 +1,10 @@
-package api
+package user
 
 import (
 	"context"
 	"log/slog"
 
-	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1"
+	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1"
 )
 
 func (s *Service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {

@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package example.v1;
+package user.v1;
 
-import "example/v1/user.proto";
+import "user/v1/user.proto";
 
-option go_package = "example/connectrpc-api";
+option go_package = "github.com/andrew-womeldorf/connect-boilerplate";
 
 message CreateUserRequest {
   string name = 1;

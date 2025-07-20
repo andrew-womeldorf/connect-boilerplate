@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "user/v1/user.proto";
+
+option go_package = "github.com/andrew-womeldorf/connect-boilerplate";
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}

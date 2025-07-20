@@ -18,7 +18,7 @@ usage() {
     cat << EOF
 Usage: $0 <new-module-name>
 
-This script renames the project from 'example/connectrpc-api' to your specified module name.
+This script renames the project from 'github.com/andrew-womeldorf/connect-boilerplate' to your specified module name.
 It should only be run ONCE after copying or forking this project.
 
 Arguments:

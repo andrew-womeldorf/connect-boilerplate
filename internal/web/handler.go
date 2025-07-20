@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
-	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1"
+	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1"
 	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
 )
 

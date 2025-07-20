@@ -1,4 +1,4 @@
-package api
+package user
 
 // Service handles the business logic
 type Service struct {

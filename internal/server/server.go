@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1/examplev1connect"
+	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1/userv1connect"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/interceptor"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/web"
 	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
@@ -54,16 +54,14 @@ func (s *Server) Run() error {
 // This is useful for Lambda functions that need to handle HTTP requests
 func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
 	service := api.NewService()
-	connectHandler := NewConnectHandler(service)
 	webHandler := web.NewHandler(service)
 
 	// Create Connect server
 	mux := http.NewServeMux()
-	mux.Handle(v1.NewUserServiceHandler(connectHandler,
-		connect.WithInterceptors(
-			interceptor.RequestIDInterceptor(),
-		),
-	))
+	p, h := v1.NewUserServiceHandler(NewConnectHandler(service),
+		connect.WithInterceptors(interceptor.RequestIDInterceptor()),
+	)
+	mux.Handle(p, h)
 
 	// Add gRPC Reflector
 	reflector := grpcreflect.NewStaticReflector(v1.UserServiceName)

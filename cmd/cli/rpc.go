@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1/examplev1connect"
+	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1/userv1connect"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
 	"github.com/andrew-womeldorf/connect-boilerplate/pkg/api"
 )

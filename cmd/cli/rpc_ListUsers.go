@@ -8,7 +8,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/spf13/cobra"
 
-	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/example/v1"
+	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1"
 )
 
 func listUsersCmd() *cobra.Command {

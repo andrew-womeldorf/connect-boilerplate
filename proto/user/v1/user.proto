@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package example.v1;
+package user.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "example/connectrpc-api";
+option go_package = "github.com/andrew-womeldorf/connect-boilerplate";
 
 message User {
   string id = 1;

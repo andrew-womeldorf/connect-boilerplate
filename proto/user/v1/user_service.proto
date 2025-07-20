@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package example.v1;
+package user.v1;
 
-import "example/v1/list_users.proto";
-import "example/v1/get_user.proto";
-import "example/v1/create_user.proto";
-import "example/v1/update_user.proto";
-import "example/v1/delete_user.proto";
+import "user/v1/list_users.proto";
+import "user/v1/get_user.proto";
+import "user/v1/create_user.proto";
+import "user/v1/update_user.proto";
+import "user/v1/delete_user.proto";
 
-option go_package = "example/connectrpc-api";
+option go_package = "github.com/andrew-womeldorf/connect-boilerplate";
 
 service UserService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);

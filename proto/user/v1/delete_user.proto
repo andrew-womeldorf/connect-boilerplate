@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/andrew-womeldorf/connect-boilerplate";
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message DeleteUserResponse {}
