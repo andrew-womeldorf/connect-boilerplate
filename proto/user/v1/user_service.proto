@@ -8,8 +8,6 @@ import "user/v1/create_user.proto";
 import "user/v1/update_user.proto";
 import "user/v1/delete_user.proto";
 
-option go_package = "github.com/andrew-womeldorf/connect-boilerplate";
-
 service UserService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);

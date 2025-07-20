@@ -48,15 +48,9 @@ if [[ ! "$NEW_MODULE" =~ ^[a-zA-Z0-9._/-]+$ ]]; then
     exit 1
 fi
 
-# Extract package name from module (last segment after last slash)
-NEW_PACKAGE=$(basename "$NEW_MODULE")
-OLD_PACKAGE="example"
-
 log_info "Project setup configuration:"
 echo "  Old module: $OLD_MODULE"
 echo "  New module: $NEW_MODULE"
-echo "  Old package: $OLD_PACKAGE"
-echo "  New package: $NEW_PACKAGE"
 echo
 
 # Check if this appears to be the template project
@@ -76,11 +70,7 @@ fi
 log_info "Starting project rename from '$OLD_MODULE' to '$NEW_MODULE'"
 echo
 
-# 1. Update go.mod
-log_info "Updating Go module file: go.mod"
-sed -i.bak "s|$OLD_MODULE|$NEW_MODULE|g" go.mod && rm go.mod.bak
-
-# 2. Update all Go files
+# Update all Go files
 log_info "Updating Go source files..."
 find . -name "*.go" -type f | while read -r file; do
     if grep -q "$OLD_MODULE" "$file"; then
@@ -89,30 +79,8 @@ find . -name "*.go" -type f | while read -r file; do
     fi
 done
 
-# 3. Update proto files (before moving them)
-log_info "Updating protobuf files..."
-find proto -name "*.proto" -type f | while read -r file; do
-    log_info "  Updating: $file"
-    sed -i.bak "s|$OLD_MODULE|$NEW_MODULE|g" "$file"
-    sed -i.bak "s|package $OLD_PACKAGE\\.v1|package $NEW_PACKAGE.v1|g" "$file"
-    sed -i.bak "s|import \"$OLD_PACKAGE/v1/|import \"$NEW_PACKAGE/v1/|g" "$file"
-    rm "$file.bak"
-done
-
-# 4. Move proto directory structure
-if [[ -d "proto/$OLD_PACKAGE" ]]; then
-    log_info "Moving proto directory: proto/$OLD_PACKAGE -> proto/$NEW_PACKAGE"
-    mv "proto/$OLD_PACKAGE" "proto/$NEW_PACKAGE"
-fi
-
-# 5. Update buf.gen.yaml if it exists
-if [[ -f "buf.gen.yaml" ]]; then
-    log_info "Updating buf generation config: buf.gen.yaml"
-    sed -i.bak "s|$OLD_MODULE|$NEW_MODULE|g" buf.gen.yaml && rm buf.gen.yaml.bak
-fi
-
-# 6. Update any other config files that might reference the old module
-for file in buf.yaml mise.toml; do
+# Update any other config files that might reference the old module
+for file in go.mod buf.gen.yaml; do
     if [[ -f "$file" ]] && grep -q "$OLD_MODULE" "$file"; then
         log_info "Updating config file: $file"
         sed -i.bak "s|$OLD_MODULE|$NEW_MODULE|g" "$file" && rm "$file.bak"

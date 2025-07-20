@@ -4,8 +4,6 @@ package user.v1;
 
 import "user/v1/user.proto";
 
-option go_package = "github.com/andrew-womeldorf/connect-boilerplate";
-
 message UpdateUserRequest {
   string id = 1;
   string name = 2;
