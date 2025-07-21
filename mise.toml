@@ -59,17 +59,17 @@ run = [
 ]
 sources = ["**/*.go"]
 outputs = ["{{vars.build_dir}}/{{vars.binary_name}}"]
-depends = ["proto:generate", "go:download"]
+depends = ["proto:generate", "go:download", "go:generate"]
 
 [tasks.test]
 description = "Run tests"
 run = "go test -v ./..."
-depends = ["proto:generate", "go:download"]
+depends = ["proto:generate", "go:download", "go:generate"]
 
 [tasks.lint]
 description = "Run linter"
 run = "golangci-lint run ./..."
-depends = ["proto:generate", "go:download"]
+depends = ["proto:generate", "go:download", "go:generate"]
 wait_for = ["go:format"]
 
 [tasks.format]
@@ -91,12 +91,12 @@ run = "rm -rf {{vars.build_dir}} && go clean"
 
 [tasks.cli]
 description = "Run API server locally"
-depends = ["proto:generate", "go:download"]
+depends = ["proto:generate", "go:download", "go:generate"]
 sources = ["**/*.go"]
 run = "go run ./cmd/cli"
 
 [tasks.serve]
 description = "Run API server locally"
-depends = ["proto:generate", "go:download"]
+depends = ["proto:generate", "go:download", "go:generate"]
 sources = ["**/*.go"]
 run = "go run ./cmd/cli serve"

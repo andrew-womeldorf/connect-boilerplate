@@ -9,6 +9,7 @@ All commands are managed through mise. The project requires `mise trust` before 
 ### Development Workflow
 - `mise run proto:generate` - Generate Go code from protobuf definitions (required after proto changes)
 - `mise run serve` - Run the API server locally on port 8080
+- `mise run cli` - Invoke the CLI
 - `mise run check` - Run all formatters, linters, and tests
 - `mise run build` - Build the CLI binary to `build/api`
 
@@ -20,35 +21,37 @@ All commands are managed through mise. The project requires `mise trust` before 
 
 ### Protobuf Management
 - `mise run proto:lint` - Lint protobuf files
-- `buf generate` - Alternative direct command for proto generation
+- `mise run proto:generate` - Generate Go code from protobuf definitions (required after proto changes)
 
 ## Architecture
 
 This is a Connect RPC API (gRPC-compatible) with the following structure:
 
 ### Protocol Buffers (1-1-1 Pattern)
-- `proto/example/v1/` - Uses the 1-1-1 pattern: one proto file per message type
+- `proto/user/v1/` - Uses the 1-1-1 pattern: one proto file per message type
 - `user_service.proto` - Service definition only (imports message files)
 - Individual message files: `list_users.proto`, `get_user.proto`, etc.
-- Generated code outputs to `gen/example/v1/`
+- Generated code outputs to `gen/user/v1/`
 
 ### Core Components
-1. **Service Layer** (`pkg/api/service.go`)
+1. **Service Layer** (`internal/services/<service>/service.go`)
    - Business logic implementation
-   - Methods return Connect responses directly
+   - Methods return Connect objects directly
+   - Each service method has its own file (`op_*.go`)
+   - Each service has its own store interface and implementation(s) (`internal/services/<service>/store/*`)
 
 2. **Server Layer** (`internal/server/`)
    - `server.go` - HTTP server setup with Connect RPC handlers, gRPC reflection, and h2c support
-   - `service_adapter.go` - Adapts the service to the Connect interface
+   - `<service>_connect_handler.go` - Adapts the service to the Connect interface
    - Provides both `Run()` for standalone server and `CreateHandler()` for Lambda
 
 3. **CLI** (`cmd/cli/`)
    - Cobra-based with three main command groups:
      - `serve` - Start the API server
-     - `rpc` - Client commands with dual mode support:
+     - `user` - Client commands for the User service with dual mode support:
        - In-memory mode (default): Direct service calls
        - Remote mode (`--endpoint` flag): HTTP client calls
-   - Each RPC method has its own file (`rpc_*.go`)
+   - Each User RPC method has its own file (`user_*.go`)
 
 4. **Lambda** (`cmd/lambda/`)
    - AWS Lambda entry point using the server's `CreateHandler()`
