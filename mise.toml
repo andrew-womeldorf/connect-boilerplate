@@ -62,7 +62,7 @@ outputs = ["{{vars.build_dir}}/{{vars.binary_name}}"]
 depends = ["proto:generate", "go:download", "go:generate"]
 
 [tasks.test]
-description = "Run tests"
+description = "Run tests. Select test with -run"
 run = "go test -v ./..."
 depends = ["proto:generate", "go:download", "go:generate"]
 

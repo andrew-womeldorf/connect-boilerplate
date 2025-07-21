@@ -11,12 +11,13 @@ INSERT INTO users (
     ?, ?, ?, ?, ?
 ) RETURNING *;
 
--- name: UpdateUser :exec
+-- name: UpdateUser :one
 UPDATE users SET
     name = ?,
     email = ?,
     updated_at = ?
-WHERE id = ?;
+WHERE id = ?
+RETURNING *;
 
--- name: DeleteUser :exec
-DELETE FROM users WHERE id = ?;
+-- name: DeleteUser :one
+DELETE FROM users WHERE id = ? RETURNING *;

@@ -1,5 +1,3 @@
-- write tests for the user store interface
-- implement the tests for the sqlite user store
 - implement the dynamodb user store
 - implement the tests for a dynamodb user store
 - make the database configurable for:

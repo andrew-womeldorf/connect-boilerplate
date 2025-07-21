@@ -61,13 +61,15 @@ func (s *Store) CreateUser(ctx context.Context, user *pb.User) error {
 }
 
 func (s *Store) DeleteUser(ctx context.Context, id string) error {
-	if err := s.q.DeleteUser(ctx, id); err != nil {
+	res, err := s.q.DeleteUser(ctx, id)
+	if err != nil {
 		slog.ErrorContext(ctx, ErrCouldNotDeleteUser.Error(),
 			slog.Any("error", err),
 			slog.String("user id", id),
 		)
 		return ErrCouldNotDeleteUser
 	}
+
 	return nil
 }
 
@@ -111,12 +113,14 @@ func (s *Store) ListUsers(ctx context.Context) ([]*pb.User, error) {
 }
 
 func (s *Store) UpdateUser(ctx context.Context, user *pb.User) error {
-	if err := s.q.UpdateUser(ctx, gen.UpdateUserParams{
+	res, err := s.q.UpdateUser(ctx, gen.UpdateUserParams{
 		ID:        user.GetId(),
 		Name:      user.GetName(),
 		Email:     user.GetEmail(),
 		UpdatedAt: user.GetUpdatedAt().AsTime().Format(time.RFC3339),
-	}); err != nil {
+	})
+
+	if err != nil {
 		slog.ErrorContext(ctx, ErrCouldNotUpdateUser.Error(),
 			slog.Any("error", err),
 			slog.String("user id", user.GetId()),
