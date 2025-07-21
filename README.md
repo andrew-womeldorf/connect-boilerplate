@@ -5,6 +5,20 @@ RPC](https://connectrpc.com/) and [Buf](https://buf.build/). It demonstrates a
 protocol-first development approach where all interactions with the system are
 driven through protobuf service definitions.
 
+My recommendation is to develop as though any service could be deployed
+separately from other services, even if the whole project is deployed as a
+monolith. This will make breaking individual services into its own deployment
+simpler, if the need arises. If you only call across service boundaries using
+the interfaces defined in `proto/`, then the contract doesn't change when you
+break out a service.
+
+A basic example service `user` is defined with two stores - sqlite and
+dynamodb.
+- The public interface is defined in `proto/user/v1/`.
+- The handlers are defined in `internal/services/user/`
+- The stores are defined in `internal/services/user/store`
+- The server registers the handlers in `internal/server/user_connect_handler.go`
+
 ## Architecture Philosophy
 
 **Schema-First Development**: This boilerplate enforces that all access to
