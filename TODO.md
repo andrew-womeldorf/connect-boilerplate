@@ -1,0 +1,11 @@
+- write tests for the user store interface
+- implement the tests for the sqlite user store
+- implement the dynamodb user store
+- implement the tests for a dynamodb user store
+- make the database configurable for:
+    - lambda (must not be sqlite store)
+    - cli serve
+    - cli user *
+    - what's the best UX for configuring
+        - which store type to use
+        - configuration for the chosen store type
