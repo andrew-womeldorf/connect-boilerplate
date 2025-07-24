@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/url"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	smithyendpoints "github.com/aws/smithy-go/endpoints"
-	testcontainers "github.com/testcontainers/testcontainers-go"
 	tc "github.com/testcontainers/testcontainers-go/modules/dynamodb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -34,6 +35,142 @@ type ddbResolver struct {
 
 func (r *ddbResolver) ResolveEndpoint(ctx context.Context, params dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
 	return smithyendpoints.Endpoint{URI: url.URL{Host: r.port, Scheme: "http"}}, nil
+}
+
+var (
+	sharedDynamoDBContainer *tc.DynamoDBContainer
+	sharedDynamoDBClient    *dynamodb.Client
+	sharedDynamoDBTableName = "users"
+	containerSetupOnce      sync.Once
+)
+
+func setupSharedDynamoDBContainer() error {
+	var err error
+	containerSetupOnce.Do(func() {
+		ctx := context.Background()
+		
+		sharedDynamoDBContainer, err = tc.Run(ctx, "amazon/dynamodb-local:latest", tc.WithSharedDB())
+		if err != nil {
+			err = fmt.Errorf("could not start dynamodb container: %w", err)
+			return
+		}
+
+		port, portErr := sharedDynamoDBContainer.ConnectionString(ctx)
+		if portErr != nil {
+			err = fmt.Errorf("could not get connection string from dynamodb container: %w", portErr)
+			return
+		}
+
+		cfg, cfgErr := config.LoadDefaultConfig(ctx,
+			config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
+				Value: aws.Credentials{AccessKeyID: "dummy", SecretAccessKey: "dummy"},
+			}),
+		)
+		if cfgErr != nil {
+			err = fmt.Errorf("failed to create aws config: %w", cfgErr)
+			return
+		}
+
+		sharedDynamoDBClient = dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&ddbResolver{port: port}))
+		
+		_, tableErr := sharedDynamoDBClient.CreateTable(ctx, &dynamodb.CreateTableInput{
+			TableName: aws.String(sharedDynamoDBTableName),
+			KeySchema: []types.KeySchemaElement{
+				{
+					AttributeName: aws.String("PK"),
+					KeyType:       types.KeyTypeHash,
+				},
+				{
+					AttributeName: aws.String("SK"),
+					KeyType:       types.KeyTypeRange,
+				},
+			},
+			AttributeDefinitions: []types.AttributeDefinition{
+				{
+					AttributeName: aws.String("PK"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
+				{
+					AttributeName: aws.String("SK"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
+				{
+					AttributeName: aws.String("GSI1PK"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
+				{
+					AttributeName: aws.String("GSI1SK"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
+			},
+			GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+				{
+					IndexName: aws.String("GSI1"),
+					KeySchema: []types.KeySchemaElement{
+						{
+							AttributeName: aws.String("GSI1PK"),
+							KeyType:       types.KeyTypeHash,
+						},
+						{
+							AttributeName: aws.String("GSI1SK"),
+							KeyType:       types.KeyTypeRange,
+						},
+					},
+					Projection: &types.Projection{
+						ProjectionType: types.ProjectionTypeAll,
+					},
+				},
+			},
+			BillingMode: types.BillingModePayPerRequest,
+		})
+		if tableErr != nil {
+			err = fmt.Errorf("failed to create dynamodb table: %w", tableErr)
+			return
+		}
+	})
+	return err
+}
+
+func cleanupDynamoDBTable(ctx context.Context) error {
+	if sharedDynamoDBClient == nil {
+		return nil
+	}
+	
+	scanOutput, err := sharedDynamoDBClient.Scan(ctx, &dynamodb.ScanInput{
+		TableName: aws.String(sharedDynamoDBTableName),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to scan table for cleanup: %w", err)
+	}
+
+	for _, item := range scanOutput.Items {
+		_, err := sharedDynamoDBClient.DeleteItem(ctx, &dynamodb.DeleteItemInput{
+			TableName: aws.String(sharedDynamoDBTableName),
+			Key: map[string]types.AttributeValue{
+				"PK": item["PK"],
+				"SK": item["SK"],
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to delete item during cleanup: %w", err)
+		}
+	}
+	
+	return nil
+}
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+	
+	// Cleanup shared container after all tests
+	if sharedDynamoDBContainer != nil {
+		ctx := context.Background()
+		if err := sharedDynamoDBContainer.Terminate(ctx); err != nil {
+			fmt.Printf("failed to terminate shared dynamodb container: %v\n", err)
+		}
+	}
+	
+	os.Exit(code)
 }
 
 func TestStore(t *testing.T) {
@@ -80,98 +217,29 @@ func TestStore(t *testing.T) {
 		{
 			name: "DynamoDB",
 			setup: func(t *testing.T) (Store, func()) {
-				// Create the testcontainer for dynamdb
-				c, err := tc.Run(ctx, "amazon/dynamodb-local:latest", tc.WithSharedDB())
-				testcontainers.CleanupContainer(t, c)
-				if err != nil {
-					t.Fatal("could not start dynamodb container")
+				// Setup shared container if not already done
+				if err := setupSharedDynamoDBContainer(); err != nil {
+					t.Fatalf("failed to setup shared dynamodb container: %v", err)
 				}
 
-				// create the configuration to connect to the testcontainer
-				port, err := c.ConnectionString(ctx)
-				if err != nil {
-					t.Fatal("could not get connection string from dynamodb container")
+				// Clean the table before each test
+				if err := cleanupDynamoDBTable(ctx); err != nil {
+					t.Fatalf("failed to cleanup dynamodb table: %v", err)
 				}
 
-				cfg, err := config.LoadDefaultConfig(ctx,
-					config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
-						Value: aws.Credentials{AccessKeyID: "dummy", SecretAccessKey: "dummy"},
-					}),
-				)
-				if err != nil {
-					t.Fatalf("failed to create aws config: %v", err)
-				}
-
-				tablename := "users"
-
-				// create a client here, so we can create the table.
-				// the table should be defined by IaC in production, so this does not
-				// belong in the store code.
-				client := dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&ddbResolver{port: port}))
-				_, err = client.CreateTable(ctx, &dynamodb.CreateTableInput{
-					TableName: aws.String(tablename),
-					KeySchema: []types.KeySchemaElement{
-						{
-							AttributeName: aws.String("PK"),
-							KeyType:       types.KeyTypeHash,
-						},
-						{
-							AttributeName: aws.String("SK"),
-							KeyType:       types.KeyTypeRange,
-						},
-					},
-					AttributeDefinitions: []types.AttributeDefinition{
-						{
-							AttributeName: aws.String("PK"),
-							AttributeType: types.ScalarAttributeTypeS,
-						},
-						{
-							AttributeName: aws.String("SK"),
-							AttributeType: types.ScalarAttributeTypeS,
-						},
-						{
-							AttributeName: aws.String("GSI1PK"),
-							AttributeType: types.ScalarAttributeTypeS,
-						},
-						{
-							AttributeName: aws.String("GSI1SK"),
-							AttributeType: types.ScalarAttributeTypeS,
-						},
-					},
-					GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
-						{
-							IndexName: aws.String("GSI1"),
-							KeySchema: []types.KeySchemaElement{
-								{
-									AttributeName: aws.String("GSI1PK"),
-									KeyType:       types.KeyTypeHash,
-								},
-								{
-									AttributeName: aws.String("GSI1SK"),
-									KeyType:       types.KeyTypeRange,
-								},
-							},
-							Projection: &types.Projection{
-								ProjectionType: types.ProjectionTypeAll,
-							},
-						},
-					},
-					BillingMode: types.BillingModePayPerRequest,
-				})
-				if err != nil {
-					t.Fatalf("failed to create dynamodb table: %v", err)
-				}
-
-				// create the store passing the configuration for the testcontainer
+				// create the store using the shared client and table
 				store, err := ddbstore.NewStore(
-					ctx, ddbstore.WithClient(client), ddbstore.WithTable(tablename),
+					ctx, ddbstore.WithClient(sharedDynamoDBClient), ddbstore.WithTable(sharedDynamoDBTableName),
 				)
 				if err != nil {
 					t.Fatalf("failed to create store: %v", err)
 				}
 
 				cleanup := func() {
-					// Container is automatically cleaned up by testcontainers
+					// Clean the table after each test
+					if err := cleanupDynamoDBTable(ctx); err != nil {
+						t.Logf("failed to cleanup dynamodb table: %v", err)
+					}
 				}
 
 				return store, cleanup
