@@ -3,13 +3,23 @@ package store
 import (
 	"context"
 	"database/sql"
+	"net/url"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	smithyendpoints "github.com/aws/smithy-go/endpoints"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	tc "github.com/testcontainers/testcontainers-go/modules/dynamodb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1"
+	ddbstore "github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store/dynamodb"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store/sqlite"
 )
 
@@ -18,7 +28,17 @@ type storeTestSuite struct {
 	setup func(t *testing.T) (Store, func())
 }
 
+type ddbResolver struct {
+	port string
+}
+
+func (r *ddbResolver) ResolveEndpoint(ctx context.Context, params dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
+	return smithyendpoints.Endpoint{URI: url.URL{Host: r.port, Scheme: "http"}}, nil
+}
+
 func TestStore(t *testing.T) {
+	ctx := context.Background()
+
 	testSuites := []storeTestSuite{
 		{
 			name: "SQLite",
@@ -27,7 +47,9 @@ func TestStore(t *testing.T) {
 				if err != nil {
 					t.Fatalf("failed to create temp file: %v", err)
 				}
-				tmpFile.Close()
+				if err = tmpFile.Close(); err != nil {
+					t.Fatalf("failed to close temp file: %v", err)
+				}
 
 				db, err := sql.Open("sqlite", tmpFile.Name())
 				if err != nil {
@@ -37,15 +59,119 @@ func TestStore(t *testing.T) {
 				if _, err := db.Exec(sqlite.Schema); err != nil {
 					t.Fatalf("failed to create schema: %v", err)
 				}
-				db.Close()
+				if err = db.Close(); err != nil {
+					t.Fatalf("failed to close sqlite file: %v", err)
+				}
 
-				store, err := sqlite.NewStore(context.Background(), tmpFile.Name())
+				store, err := sqlite.NewStore(ctx, tmpFile.Name())
 				if err != nil {
 					t.Fatalf("failed to create store: %v", err)
 				}
 
 				cleanup := func() {
-					os.Remove(tmpFile.Name())
+					if err := os.Remove(tmpFile.Name()); err != nil {
+						t.Fatal("failed to cleanup sqlite file")
+					}
+				}
+
+				return store, cleanup
+			},
+		},
+		{
+			name: "DynamoDB",
+			setup: func(t *testing.T) (Store, func()) {
+				// Create the testcontainer for dynamdb
+				c, err := tc.Run(ctx, "amazon/dynamodb-local:latest", tc.WithSharedDB())
+				testcontainers.CleanupContainer(t, c)
+				if err != nil {
+					t.Fatal("could not start dynamodb container")
+				}
+
+				// create the configuration to connect to the testcontainer
+				port, err := c.ConnectionString(ctx)
+				if err != nil {
+					t.Fatal("could not get connection string from dynamodb container")
+				}
+
+				cfg, err := config.LoadDefaultConfig(ctx,
+					config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
+						Value: aws.Credentials{AccessKeyID: "dummy", SecretAccessKey: "dummy"},
+					}),
+				)
+				if err != nil {
+					t.Fatalf("failed to create aws config: %v", err)
+				}
+
+				tablename := "users"
+
+				// create a client here, so we can create the table.
+				// the table should be defined by IaC in production, so this does not
+				// belong in the store code.
+				client := dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&ddbResolver{port: port}))
+				_, err = client.CreateTable(ctx, &dynamodb.CreateTableInput{
+					TableName: aws.String(tablename),
+					KeySchema: []types.KeySchemaElement{
+						{
+							AttributeName: aws.String("PK"),
+							KeyType:       types.KeyTypeHash,
+						},
+						{
+							AttributeName: aws.String("SK"),
+							KeyType:       types.KeyTypeRange,
+						},
+					},
+					AttributeDefinitions: []types.AttributeDefinition{
+						{
+							AttributeName: aws.String("PK"),
+							AttributeType: types.ScalarAttributeTypeS,
+						},
+						{
+							AttributeName: aws.String("SK"),
+							AttributeType: types.ScalarAttributeTypeS,
+						},
+						{
+							AttributeName: aws.String("GSI1PK"),
+							AttributeType: types.ScalarAttributeTypeS,
+						},
+						{
+							AttributeName: aws.String("GSI1SK"),
+							AttributeType: types.ScalarAttributeTypeS,
+						},
+					},
+					GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+						{
+							IndexName: aws.String("GSI1"),
+							KeySchema: []types.KeySchemaElement{
+								{
+									AttributeName: aws.String("GSI1PK"),
+									KeyType:       types.KeyTypeHash,
+								},
+								{
+									AttributeName: aws.String("GSI1SK"),
+									KeyType:       types.KeyTypeRange,
+								},
+							},
+							Projection: &types.Projection{
+								ProjectionType: types.ProjectionTypeAll,
+							},
+						},
+					},
+					BillingMode: types.BillingModePayPerRequest,
+				})
+				if err != nil {
+					t.Fatalf("failed to create dynamodb table: %v", err)
+				}
+
+				// create the store passing the configuration for the testcontainer
+				store, err := ddbstore.NewStore(
+					ctx, ddbstore.WithClient(client), ddbstore.WithTable(tablename),
+				)
+				if err != nil {
+					t.Fatalf("failed to create store: %v", err)
+				}
+
+				cleanup := func() {
+					// Container is automatically cleaned up by testcontainers
 				}
 
 				return store, cleanup
@@ -55,41 +181,41 @@ func TestStore(t *testing.T) {
 
 	for _, suite := range testSuites {
 		t.Run(suite.name, func(t *testing.T) {
-			runStoreTests(t, suite.setup)
+			runStoreTests(ctx, t, suite.setup)
 		})
 	}
 }
 
-func runStoreTests(t *testing.T, setup func(t *testing.T) (Store, func())) {
+func runStoreTests(ctx context.Context, t *testing.T, setup func(t *testing.T) (Store, func())) {
 	t.Run("CreateUser", func(t *testing.T) {
-		testCreateUser(t, setup)
+		testCreateUser(ctx, t, setup)
 	})
 	t.Run("GetUser", func(t *testing.T) {
-		testGetUser(t, setup)
+		testGetUser(ctx, t, setup)
 	})
 	t.Run("UpdateUser", func(t *testing.T) {
-		testUpdateUser(t, setup)
+		testUpdateUser(ctx, t, setup)
 	})
 	t.Run("DeleteUser", func(t *testing.T) {
-		testDeleteUser(t, setup)
+		testDeleteUser(ctx, t, setup)
 	})
 	t.Run("ListUsers", func(t *testing.T) {
-		testListUsers(t, setup)
+		testListUsers(ctx, t, setup)
 	})
 }
 
-func testCreateUser(t *testing.T, setup func(t *testing.T) (Store, func())) {
+func testCreateUser(ctx context.Context, t *testing.T, setup func(t *testing.T) (Store, func())) {
 	t.Run("success", func(t *testing.T) {
 		store, cleanup := setup(t)
 		defer cleanup()
 
 		user := createTestUser("1", "John Doe", "john@example.com")
-		err := store.CreateUser(context.Background(), user)
+		err := store.CreateUser(ctx, user)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		retrieved, err := store.GetUser(context.Background(), "1")
+		retrieved, err := store.GetUser(ctx, "1")
 		if err != nil {
 			t.Fatalf("failed to retrieve created user: %v", err)
 		}
@@ -112,30 +238,30 @@ func testCreateUser(t *testing.T, setup func(t *testing.T) (Store, func())) {
 		user1 := createTestUser("1", "John Doe", "john@example.com")
 		user2 := createTestUser("1", "Jane Doe", "jane@example.com")
 
-		err := store.CreateUser(context.Background(), user1)
+		err := store.CreateUser(ctx, user1)
 		if err != nil {
 			t.Fatalf("first create should succeed: %v", err)
 		}
 
-		err = store.CreateUser(context.Background(), user2)
+		err = store.CreateUser(ctx, user2)
 		if err == nil {
 			t.Fatal("expected error for duplicate ID, got nil")
 		}
 	})
 }
 
-func testGetUser(t *testing.T, setup func(t *testing.T) (Store, func())) {
+func testGetUser(ctx context.Context, t *testing.T, setup func(t *testing.T) (Store, func())) {
 	t.Run("existing_user", func(t *testing.T) {
 		store, cleanup := setup(t)
 		defer cleanup()
 
 		user := createTestUser("1", "John Doe", "john@example.com")
-		err := store.CreateUser(context.Background(), user)
+		err := store.CreateUser(ctx, user)
 		if err != nil {
 			t.Fatalf("failed to create user: %v", err)
 		}
 
-		retrieved, err := store.GetUser(context.Background(), "1")
+		retrieved, err := store.GetUser(ctx, "1")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -155,31 +281,31 @@ func testGetUser(t *testing.T, setup func(t *testing.T) (Store, func())) {
 		store, cleanup := setup(t)
 		defer cleanup()
 
-		_, err := store.GetUser(context.Background(), "non-existent")
+		_, err := store.GetUser(ctx, "non-existent")
 		if err == nil {
 			t.Fatal("expected error for non-existent user, got nil")
 		}
 	})
 }
 
-func testUpdateUser(t *testing.T, setup func(t *testing.T) (Store, func())) {
+func testUpdateUser(ctx context.Context, t *testing.T, setup func(t *testing.T) (Store, func())) {
 	t.Run("existing_user", func(t *testing.T) {
 		store, cleanup := setup(t)
 		defer cleanup()
 
 		user := createTestUser("1", "John Doe", "john@example.com")
-		err := store.CreateUser(context.Background(), user)
+		err := store.CreateUser(ctx, user)
 		if err != nil {
 			t.Fatalf("failed to create user: %v", err)
 		}
 
 		updatedUser := createTestUser("1", "John Smith", "johnsmith@example.com")
-		err = store.UpdateUser(context.Background(), updatedUser)
+		err = store.UpdateUser(ctx, updatedUser)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		retrieved, err := store.GetUser(context.Background(), "1")
+		retrieved, err := store.GetUser(ctx, "1")
 		if err != nil {
 			t.Fatalf("failed to retrieve updated user: %v", err)
 		}
@@ -197,30 +323,30 @@ func testUpdateUser(t *testing.T, setup func(t *testing.T) (Store, func())) {
 		defer cleanup()
 
 		user := createTestUser("non-existent", "John Doe", "john@example.com")
-		err := store.UpdateUser(context.Background(), user)
+		err := store.UpdateUser(ctx, user)
 		if err == nil {
 			t.Fatal("expected error for non-existent user, got nil")
 		}
 	})
 }
 
-func testDeleteUser(t *testing.T, setup func(t *testing.T) (Store, func())) {
+func testDeleteUser(ctx context.Context, t *testing.T, setup func(t *testing.T) (Store, func())) {
 	t.Run("existing_user", func(t *testing.T) {
 		store, cleanup := setup(t)
 		defer cleanup()
 
 		user := createTestUser("1", "John Doe", "john@example.com")
-		err := store.CreateUser(context.Background(), user)
+		err := store.CreateUser(ctx, user)
 		if err != nil {
 			t.Fatalf("failed to create user: %v", err)
 		}
 
-		err = store.DeleteUser(context.Background(), "1")
+		err = store.DeleteUser(ctx, "1")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		_, err = store.GetUser(context.Background(), "1")
+		_, err = store.GetUser(ctx, "1")
 		if err == nil {
 			t.Fatal("user should not exist after deletion")
 		}
@@ -230,19 +356,19 @@ func testDeleteUser(t *testing.T, setup func(t *testing.T) (Store, func())) {
 		store, cleanup := setup(t)
 		defer cleanup()
 
-		err := store.DeleteUser(context.Background(), "non-existent")
+		err := store.DeleteUser(ctx, "non-existent")
 		if err == nil {
 			t.Fatalf("deleting non-existent user should fail, got %v", err)
 		}
 	})
 }
 
-func testListUsers(t *testing.T, setup func(t *testing.T) (Store, func())) {
+func testListUsers(ctx context.Context, t *testing.T, setup func(t *testing.T) (Store, func())) {
 	t.Run("empty_list", func(t *testing.T) {
 		store, cleanup := setup(t)
 		defer cleanup()
 
-		users, err := store.ListUsers(context.Background())
+		users, err := store.ListUsers(ctx)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -261,13 +387,13 @@ func testListUsers(t *testing.T, setup func(t *testing.T) (Store, func())) {
 		user3 := createTestUser("3", "Bob Smith", "bob@example.com")
 
 		for _, user := range []*pb.User{user1, user2, user3} {
-			err := store.CreateUser(context.Background(), user)
+			err := store.CreateUser(ctx, user)
 			if err != nil {
 				t.Fatalf("failed to create user %s: %v", user.GetId(), err)
 			}
 		}
 
-		users, err := store.ListUsers(context.Background())
+		users, err := store.ListUsers(ctx)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
