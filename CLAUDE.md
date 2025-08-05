@@ -18,7 +18,7 @@
 - All rpc methods must be handled by:
     - `internal/server/<service>_connect_handler.go`, which unwraps ConnectRPC Requests, calls the service, and creates new ConnectRPC Responses.
     - `internal/services/<service>/op_<rpc>.go`, which handles the business logic for a `pb.<rpc>Request`.
-    - `cmd/cli/<service>_<rpc>.go`, which adds a new cobra subcommand with flags to support the Request object.
+    - `cmd/cli/<service>/op_<rpc>.go`, which adds a new cobra subcommand with flags to support the Request object.
 - The web interface (`internal/web/`) can be implemented in any way. But it must make use of `internal/services/*` for data management. It is not allowed to access the data store directly.
 - Each service maintains its own store (`internal/services/<service>/store`)
     - The store interface is maintained in `internal/services/<service>/store/store.go`

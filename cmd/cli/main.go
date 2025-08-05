@@ -8,6 +8,8 @@ import (
 	"github.com/lmittmann/tint"
 	slogformatter "github.com/samber/slog-formatter"
 	"github.com/spf13/cobra"
+
+	"github.com/andrew-womeldorf/connect-boilerplate/cmd/cli/user"
 )
 
 func main() {
@@ -67,4 +69,5 @@ func init() {
 	// Add persistent flags that will be available to all commands
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	RootCmd.PersistentFlags().BoolVar(&jsonLogs, "json", false, "Output logs in JSON format (default: text)")
+	user.Register(RootCmd)
 }

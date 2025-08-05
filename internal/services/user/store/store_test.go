@@ -48,7 +48,7 @@ func setupSharedDynamoDBContainer() error {
 	var err error
 	containerSetupOnce.Do(func() {
 		ctx := context.Background()
-		
+
 		sharedDynamoDBContainer, err = tc.Run(ctx, "amazon/dynamodb-local:latest", tc.WithSharedDB())
 		if err != nil {
 			err = fmt.Errorf("could not start dynamodb container: %w", err)
@@ -72,7 +72,7 @@ func setupSharedDynamoDBContainer() error {
 		}
 
 		sharedDynamoDBClient = dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&ddbResolver{port: port}))
-		
+
 		_, tableErr := sharedDynamoDBClient.CreateTable(ctx, &dynamodb.CreateTableInput{
 			TableName: aws.String(sharedDynamoDBTableName),
 			KeySchema: []types.KeySchemaElement{
@@ -135,7 +135,7 @@ func cleanupDynamoDBTable(ctx context.Context) error {
 	if sharedDynamoDBClient == nil {
 		return nil
 	}
-	
+
 	scanOutput, err := sharedDynamoDBClient.Scan(ctx, &dynamodb.ScanInput{
 		TableName: aws.String(sharedDynamoDBTableName),
 	})
@@ -155,13 +155,13 @@ func cleanupDynamoDBTable(ctx context.Context) error {
 			return fmt.Errorf("failed to delete item during cleanup: %w", err)
 		}
 	}
-	
+
 	return nil
 }
 
 func TestMain(m *testing.M) {
 	code := m.Run()
-	
+
 	// Cleanup shared container after all tests
 	if sharedDynamoDBContainer != nil {
 		ctx := context.Background()
@@ -169,7 +169,7 @@ func TestMain(m *testing.M) {
 			fmt.Printf("failed to terminate shared dynamodb container: %v\n", err)
 		}
 	}
-	
+
 	os.Exit(code)
 }
 

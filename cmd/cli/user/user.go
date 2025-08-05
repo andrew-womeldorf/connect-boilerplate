@@ -1,4 +1,4 @@
-package main
+package user
 
 import (
 	"context"
@@ -35,8 +35,8 @@ This command provides subcommands for all RPCs in the User service.`,
 	},
 }
 
-func init() {
-	RootCmd.AddCommand(userCmd)
+func Register(root *cobra.Command) {
+	root.AddCommand(userCmd)
 
 	// Add API endpoint flag to the user command
 	userCmd.PersistentFlags().StringVar(&apiEndpoint, "endpoint", "", "API endpoint URL (e.g., http://localhost:8088)")

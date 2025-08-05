@@ -1,4 +1,4 @@
-package main
+package user
 
 import (
 	"context"
@@ -11,26 +11,21 @@ import (
 	pb "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1"
 )
 
-func updateUserCmd() *cobra.Command {
-	var userID string
+func createUserCmd() *cobra.Command {
 	var userName string
 	var userEmail string
 
 	cmd := &cobra.Command{
-		Use:   "update-user",
-		Short: "Update an existing user",
-		Long:  `Update an existing user with the given ID, name, and email.`,
+		Use:   "create-user",
+		Short: "Create a new user",
+		Long:  `Create a new user with the given name and email.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			runUpdateUser(userID, userName, userEmail)
+			runCreateUser(userName, userEmail)
 		},
 	}
 
-	cmd.Flags().StringVar(&userID, "id", "", "User ID to update (required)")
 	cmd.Flags().StringVar(&userName, "name", "", "User name (required)")
 	cmd.Flags().StringVar(&userEmail, "email", "", "User email (required)")
-	if err := cmd.MarkFlagRequired("id"); err != nil {
-		panic(err)
-	}
 	if err := cmd.MarkFlagRequired("name"); err != nil {
 		panic(err)
 	}
@@ -41,7 +36,7 @@ func updateUserCmd() *cobra.Command {
 	return cmd
 }
 
-func runUpdateUser(userID, userName, userEmail string) {
+func runCreateUser(userName, userEmail string) {
 	ctx := context.Background()
 
 	// Get client based on endpoint flag
@@ -52,20 +47,19 @@ func runUpdateUser(userID, userName, userEmail string) {
 	}
 
 	// Create request
-	req := &pb.UpdateUserRequest{
-		Id:    userID,
+	req := &pb.CreateUserRequest{
 		Name:  userName,
 		Email: userEmail,
 	}
 
 	// Call the service
-	slog.Debug("Updating user", "id", userID, "name", userName, "email", userEmail)
-	resp, err := client.UpdateUser(ctx, connect.NewRequest(req))
+	slog.Debug("Creating user", "name", userName, "email", userEmail)
+	resp, err := client.CreateUser(ctx, connect.NewRequest(req))
 	if err != nil {
-		slog.Error("Failed to update user", "error", err)
+		slog.Error("Failed to create user", "error", err)
 		os.Exit(1)
 	}
-	slog.Debug("Successfully updated user")
+	slog.Debug("Successfully created user")
 
 	printJSON(resp.Msg)
 }
