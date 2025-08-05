@@ -37,7 +37,7 @@ func runDeleteUser(userID string) {
 	// Get client based on endpoint flag
 	client, err := getClient(ctx)
 	if err != nil {
-		slog.Error("Failed to create client", "error", err)
+		slog.ErrorContext(ctx, "Failed to create client", "error", err)
 		os.Exit(1)
 	}
 
@@ -47,13 +47,13 @@ func runDeleteUser(userID string) {
 	}
 
 	// Call the service
-	slog.Debug("Deleting user", "id", userID)
+	slog.DebugContext(ctx, "Deleting user", "id", userID)
 	resp, err := client.DeleteUser(ctx, connect.NewRequest(req))
 	if err != nil {
-		slog.Error("Failed to delete user", "error", err)
+		slog.ErrorContext(ctx, "Failed to delete user", "error", err)
 		os.Exit(1)
 	}
-	slog.Debug("Successfully deleted user")
+	slog.DebugContext(ctx, "Successfully deleted user")
 
 	printJSON(resp.Msg)
 }

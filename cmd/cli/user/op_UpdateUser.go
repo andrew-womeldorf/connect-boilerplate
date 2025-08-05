@@ -47,7 +47,7 @@ func runUpdateUser(userID, userName, userEmail string) {
 	// Get client based on endpoint flag
 	client, err := getClient(ctx)
 	if err != nil {
-		slog.Error("Failed to create client", "error", err)
+		slog.ErrorContext(ctx, "Failed to create client", "error", err)
 		os.Exit(1)
 	}
 
@@ -59,13 +59,13 @@ func runUpdateUser(userID, userName, userEmail string) {
 	}
 
 	// Call the service
-	slog.Debug("Updating user", "id", userID, "name", userName, "email", userEmail)
+	slog.DebugContext(ctx, "Updating user", "id", userID, "name", userName, "email", userEmail)
 	resp, err := client.UpdateUser(ctx, connect.NewRequest(req))
 	if err != nil {
-		slog.Error("Failed to update user", "error", err)
+		slog.ErrorContext(ctx, "Failed to update user", "error", err)
 		os.Exit(1)
 	}
-	slog.Debug("Successfully updated user")
+	slog.DebugContext(ctx, "Successfully updated user")
 
 	printJSON(resp.Msg)
 }

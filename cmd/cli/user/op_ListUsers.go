@@ -37,7 +37,7 @@ func runListUsers(pageSize int32, pageToken string) {
 	// Get client based on endpoint flag
 	client, err := getClient(ctx)
 	if err != nil {
-		slog.Error("Failed to create client", "error", err)
+		slog.ErrorContext(ctx, "Failed to create client", "error", err)
 		os.Exit(1)
 	}
 
@@ -48,13 +48,13 @@ func runListUsers(pageSize int32, pageToken string) {
 	}
 
 	// Call the service
-	slog.Debug("Listing users...")
+	slog.DebugContext(ctx, "Listing users...")
 	resp, err := client.ListUsers(ctx, connect.NewRequest(req))
 	if err != nil {
-		slog.Error("Failed to list users", "error", err)
+		slog.ErrorContext(ctx, "Failed to list users", "error", err)
 		os.Exit(1)
 	}
-	slog.Debug("Successfully listed users", "count", len(resp.Msg.Users))
+	slog.DebugContext(ctx, "Successfully listed users", "count", len(resp.Msg.Users))
 
 	// Create a response object with users
 	result := struct {

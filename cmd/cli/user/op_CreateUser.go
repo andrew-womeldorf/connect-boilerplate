@@ -42,7 +42,7 @@ func runCreateUser(userName, userEmail string) {
 	// Get client based on endpoint flag
 	client, err := getClient(ctx)
 	if err != nil {
-		slog.Error("Failed to create client", "error", err)
+		slog.ErrorContext(ctx, "Failed to create client", "error", err)
 		os.Exit(1)
 	}
 
@@ -53,13 +53,13 @@ func runCreateUser(userName, userEmail string) {
 	}
 
 	// Call the service
-	slog.Debug("Creating user", "name", userName, "email", userEmail)
+	slog.DebugContext(ctx, "Creating user", "name", userName, "email", userEmail)
 	resp, err := client.CreateUser(ctx, connect.NewRequest(req))
 	if err != nil {
-		slog.Error("Failed to create user", "error", err)
+		slog.ErrorContext(ctx, "Failed to create user", "error", err)
 		os.Exit(1)
 	}
-	slog.Debug("Successfully created user")
+	slog.DebugContext(ctx, "Successfully created user")
 
 	printJSON(resp.Msg)
 }

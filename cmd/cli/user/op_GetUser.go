@@ -37,7 +37,7 @@ func runGetUser(userID string) {
 	// Get client based on endpoint flag
 	client, err := getClient(ctx)
 	if err != nil {
-		slog.Error("Failed to create client", "error", err)
+		slog.ErrorContext(ctx, "Failed to create client", "error", err)
 		os.Exit(1)
 	}
 
@@ -47,13 +47,13 @@ func runGetUser(userID string) {
 	}
 
 	// Call the service
-	slog.Debug("Getting user", "id", userID)
+	slog.DebugContext(ctx, "Getting user", "id", userID)
 	resp, err := client.GetUser(ctx, connect.NewRequest(req))
 	if err != nil {
-		slog.Error("Failed to get user", "error", err)
+		slog.ErrorContext(ctx, "Failed to get user", "error", err)
 		os.Exit(1)
 	}
-	slog.Debug("Successfully got user")
+	slog.DebugContext(ctx, "Successfully got user")
 
 	printJSON(resp.Msg)
 }
