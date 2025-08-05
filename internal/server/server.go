@@ -6,14 +6,13 @@ import (
 	"log/slog"
 	"net/http"
 
-	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
 	sloghttp "github.com/samber/slog-http"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
 	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1/userv1connect"
-	"github.com/andrew-womeldorf/connect-boilerplate/internal/interceptor"
+	"github.com/andrew-womeldorf/connect-boilerplate/internal/middleware"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/web"
@@ -61,9 +60,7 @@ func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
 
 	// Create Connect server
 	mux := http.NewServeMux()
-	p, h := v1.NewUserServiceHandler(NewUserConnectHandler(userService),
-		connect.WithInterceptors(interceptor.RequestIDInterceptor()),
-	)
+	p, h := v1.NewUserServiceHandler(NewUserConnectHandler(userService))
 	mux.Handle(p, h)
 
 	// Add gRPC Reflector
@@ -85,6 +82,7 @@ func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add CORS middleware for browser clients
 	mid := corsMiddleware(mux)
+	mid = middleware.RequestIDMiddleware(mid)
 	mid = sloghttp.Recovery(mid)
 	mid = sloghttp.New(slog.Default())(mid)
 

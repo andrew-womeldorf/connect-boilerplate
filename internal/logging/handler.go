@@ -2,7 +2,6 @@ package logging
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	internalContext "github.com/andrew-womeldorf/connect-boilerplate/internal/context"
@@ -19,11 +18,9 @@ func NewRequestIDHandler(handler slog.Handler) *RequestIDHandler {
 }
 
 func (h *RequestIDHandler) Handle(ctx context.Context, record slog.Record) error {
-	fmt.Println("before handle logger")
 	if requestID, ok := internalContext.GetRequestID(ctx); ok {
 		record.AddAttrs(slog.String("id", requestID))
 	}
-	fmt.Println("after handle logger")
 	return h.handler.Handle(ctx, record)
 }
 
