@@ -7,11 +7,9 @@ import (
 )
 
 func (s *Service) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	// TODO: Implement actual logic
-	user := &pb.User{
-		Id:    req.Id,
-		Name:  "John Doe",
-		Email: "john@example.com",
+	user, err := s.store.GetUser(ctx, req.Id)
+	if err != nil {
+		return nil, err
 	}
 
 	return &pb.GetUserResponse{User: user}, nil

@@ -7,11 +7,14 @@ import (
 )
 
 func (s *Service) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error) {
-	// TODO: Implement actual logic
 	user := &pb.User{
 		Id:    req.Id,
 		Name:  req.Name,
 		Email: req.Email,
+	}
+
+	if err := s.store.UpdateUser(ctx, user); err != nil {
+		return nil, err
 	}
 
 	return &pb.UpdateUserResponse{User: user}, nil

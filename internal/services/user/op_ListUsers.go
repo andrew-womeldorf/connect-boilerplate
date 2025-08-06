@@ -10,18 +10,9 @@ import (
 func (s *Service) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
 	slog.InfoContext(ctx, "listing users")
 
-	// TODO: Implement actual logic
-	users := []*pb.User{
-		{
-			Id:    "1",
-			Name:  "John Doe",
-			Email: "john@example.com",
-		},
-		{
-			Id:    "2",
-			Name:  "Jane Smith",
-			Email: "jane@example.com",
-		},
+	users, err := s.store.ListUsers(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return &pb.ListUsersResponse{Users: users}, nil

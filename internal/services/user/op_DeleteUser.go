@@ -7,6 +7,9 @@ import (
 )
 
 func (s *Service) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*pb.DeleteUserResponse, error) {
-	// TODO: Implement actual logic
+	if err := s.store.DeleteUser(ctx, req.Id); err != nil {
+		return nil, err
+	}
+
 	return &pb.DeleteUserResponse{}, nil
 }
