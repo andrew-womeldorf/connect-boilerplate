@@ -57,9 +57,23 @@ func (s *Server) Run() error {
 // Add common attributes to all logs
 func configureLogging() {
 	mid := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
-		if requestID := sloghttp.GetRequestIDFromContext(ctx); requestID != "" {
-			record.AddAttrs(slog.String("id", requestID))
+		keyExists := false
+		keyName := "id"
+
+		record.Attrs(func(attr slog.Attr) bool {
+			if attr.Key == keyName {
+				keyExists = true
+				return false
+			}
+			return true
+		})
+
+		if !keyExists {
+			if requestID := sloghttp.GetRequestIDFromContext(ctx); requestID != "" {
+				record.AddAttrs(slog.String(keyName, requestID))
+			}
 		}
+
 		return next(ctx, record)
 	})
 
