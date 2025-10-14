@@ -8,11 +8,11 @@ import (
 
 	"connectrpc.com/grpcreflect"
 	sloghttp "github.com/samber/slog-http"
+	slogmulti "github.com/samber/slog-multi"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
 	v1 "github.com/andrew-womeldorf/connect-boilerplate/gen/user/v1/userv1connect"
-	"github.com/andrew-womeldorf/connect-boilerplate/internal/middleware"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/web"
@@ -36,6 +36,8 @@ func NewServer(port int, userStore store.Store) *Server {
 func (s *Server) Run() error {
 	ctx := context.Background()
 
+	configureLogging()
+
 	// Create handler
 	handler, err := s.CreateHandler(ctx)
 	if err != nil {
@@ -50,6 +52,20 @@ func (s *Server) Run() error {
 	}
 
 	return nil
+}
+
+// Add common attributes to all logs
+func configureLogging() {
+	mid := slogmulti.NewHandleInlineMiddleware(func(ctx context.Context, record slog.Record, next func(context.Context, slog.Record) error) error {
+		if requestID := sloghttp.GetRequestIDFromContext(ctx); requestID != "" {
+			record.AddAttrs(slog.String("id", requestID))
+		}
+		return next(ctx, record)
+	})
+
+	slog.SetDefault(slog.New(
+		mid(slog.Default().Handler()),
+	))
 }
 
 // CreateHandler creates an HTTP handler for the server without starting it
@@ -82,9 +98,17 @@ func (s *Server) CreateHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add CORS middleware for browser clients
 	mid := corsMiddleware(mux)
-	mid = middleware.RequestIDMiddleware(mid)
 	mid = sloghttp.Recovery(mid)
-	mid = sloghttp.New(slog.Default())(mid)
+	mid = sloghttp.NewWithConfig(
+		slog.Default(),
+		sloghttp.Config{
+			WithSpanID:         true,
+			WithTraceID:        true,
+			WithRequestID:      true,
+			WithRequestHeader:  true,
+			WithResponseHeader: true,
+		},
+	)(mid)
 
 	// Create h2c handler for HTTP/2 support
 	h2cHandler := h2c.NewHandler(mid, &http2.Server{})

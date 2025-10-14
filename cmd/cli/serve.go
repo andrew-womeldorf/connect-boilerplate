@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/andrew-womeldorf/connect-boilerplate/internal/logging"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/server"
 	"github.com/andrew-womeldorf/connect-boilerplate/internal/services/user/store/sqlite"
 )
@@ -20,9 +19,6 @@ var serveCmd = &cobra.Command{
 	Short: "Start the API server",
 	Long:  `Start the API server that provides Connect RPC endpoints.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Setup logger
-		logging.SetupLogger()
-
 		store, err := sqlite.NewStore(context.Background(), ":memory:")
 		if err != nil {
 			panic(err)

@@ -26,10 +26,9 @@ var (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "api",
-	Short: "Example Connect RPC API CLI",
-	Long: `Example Connect RPC API CLI provides commands for managing users.
-It provides both server functionality and RPC client commands.`,
+	Use:   "foo",
+	Short: "foo",
+	Long:  `foo`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Configure logger based on verbose flag
 		logLevel := slog.LevelInfo
