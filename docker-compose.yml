@@ -4,7 +4,7 @@ services:
     image: localstack/localstack:latest
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./internal/services/user/store/dynamodb/terraform:/terraform/"
+      - "./terraform/modules/infra:/terraform/"
       - "./.docker/localstack-terraform.py:/etc/localstack/init/ready.d/localstack-terraform.sh"
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
